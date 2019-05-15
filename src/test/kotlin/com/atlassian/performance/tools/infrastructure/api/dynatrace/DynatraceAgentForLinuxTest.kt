@@ -13,8 +13,6 @@ class DynatraceAgentForLinuxTest {
 
     @Test
     fun installShouldDownloadAndInstallBasedOnRuntimeData() {
-
-
         val ssh = MockSshConnection()
 
         DynatraceAgentForLinux(apiHost, apiToken, agentVersion).install(ssh)

@@ -14,7 +14,6 @@ class MockSshConnection : SshConnection {
 
 
     val executionAudit : MutableList<String> = mutableListOf()
-    val ssh: Ssh = Ssh(SshHost("","", Paths.get("")))
 
     override fun execute(cmd: String, timeout: Duration, stdout: Level, stderr: Level): SshConnection.SshResult {
         executionAudit.add(cmd)
@@ -31,23 +30,22 @@ class MockSshConnection : SshConnection {
     }
 
     override fun close() {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        throw NotImplementedError("Unexpected call")
     }
 
     override fun download(remoteSource: String, localDestination: Path) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        throw NotImplementedError("Unexpected call")
     }
 
     override fun startProcess(cmd: String): DetachedProcess {
-        // I don't think this will work...
-        return ssh.newConnection().startProcess(cmd)
+        throw NotImplementedError("Unexpected call")
     }
 
     override fun stopProcess(process: DetachedProcess) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        throw NotImplementedError("Unexpected call")
     }
 
     override fun upload(localSource: File, remoteDestination: String) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        throw NotImplementedError("Unexpected call")
     }
 }

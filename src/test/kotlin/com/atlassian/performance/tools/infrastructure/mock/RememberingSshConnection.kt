@@ -1,6 +1,7 @@
 package com.atlassian.performance.tools.infrastructure.mock
 
 import com.atlassian.performance.tools.ssh.api.SshConnection
+import com.atlassian.performance.tools.ssh.api.SshHost
 import org.apache.logging.log4j.Level
 import java.io.File
 import java.time.Duration
@@ -29,6 +30,8 @@ class RememberingSshConnection : SshConnection by UnimplementedSshConnection() {
             errorOutput = ""
         )
     }
+
+    override fun getHost(): SshHost = SshHost("", "", File("").toPath())
 
     class Upload(val localSource: File, val remoteDestination: String, val content: String)
 }

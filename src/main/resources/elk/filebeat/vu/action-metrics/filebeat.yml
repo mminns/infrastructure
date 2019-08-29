@@ -1,0 +1,49 @@
+# Export JPT's Virtual User action metrics to ELK
+# This will run wih a standard filebeat install
+# Override the path.home to keep data and logs etc in a known place
+#
+# $ ./filebeat run -c filebeat-jpt-action-metrics.yml -e --path.home ~/temp/filebeat-jpt-action-metrics/home
+#
+# NB. filebeat-jpt-action-metrics.yml must exist in path.home
+#
+# see the following for more details
+#
+# # ./filebeat --help
+#
+filebeat.inputs:
+  - type: log
+    enabled: true
+    paths:
+      # this is the default location of the logs on the VU hosts
+      - ${HOME}/test-results/*/action-metrics.jpt
+
+setup.template.settings:
+  index.number_of_shards: 1
+
+# not really used yet but tell it where kibana is
+setup.kibana:
+  host: "34.253.121.248:5601"
+
+# output to elasticsearch
+output:
+  elasticsearch:
+    hosts: ["34.253.121.248:9200"]
+
+# TESTING
+# for test purposes comment out the elasticsearch block and uncomment this, then run
+# $./filebeat run -c filebeat-jpt-action-metrics.yml -e
+# the output will be written to the console where you can see it.
+#output.console.pretty: true
+
+# the log input will treat the line as text in the 'message' field, t
+# thisprocessor will read the contents of 'message' convert to JSON and add it to the output as an object uner 'actionMetric'
+processors:
+  - decode_json_fields:
+      fields: ["message"]
+      target: "actionMetric"
+  - script:
+      lang: javascript
+      id: parseDuration
+      file: ${path.config}/filebeat-processor-script-parseDuration.js
+  - add_host_metadata: ~
+  - add_cloud_metadata: ~

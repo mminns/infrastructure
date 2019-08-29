@@ -1,0 +1,79 @@
+package com.atlassian.performance.tools.infrastructure.api.elk
+
+import com.atlassian.performance.tools.awsinfrastructure.api.kibana.Kibana
+import com.atlassian.performance.tools.infrastructure.api.os.Ubuntu
+import com.atlassian.performance.tools.ssh.api.SshConnection
+import java.io.File
+import java.net.URI
+import java.nio.file.Paths
+import java.time.Duration
+
+class UbuntuFilebeat(
+    private val kibana: Kibana,
+    private val configFile: URI,
+    private val supportingFiles: List<URI>
+) {
+    private val exe = "filebeat"
+    private val debFile = "$exe-7.3.1-i386.deb"
+    private val rootDownloadUri = URI("https://artifacts.elastic.co/downloads/beats/$exe/")
+
+    fun install(ssh: SshConnection) {
+        downloadAndInstall(ssh)
+
+        configure(ssh)
+
+        setup(ssh)
+
+        start(ssh)
+    }
+
+    private fun downloadAndInstall(ssh: SshConnection) {
+        Ubuntu().install(ssh, listOf("wget"))
+        ssh.execute("wget ${rootDownloadUri.resolve(debFile)} -q --server-response")
+        ssh.execute("sudo dpkg -i $debFile", Duration.ofSeconds(50))
+    }
+
+    private fun configure(ssh: SshConnection) {
+
+        val config = ElasticConfig(exe).clean(ssh)
+
+        // overwrite the existing file
+        uploadFile(File(configFile), ssh, config)
+
+        // upload supporting files to the home directory
+        supportingFiles.forEach {
+            uri -> uploadFile(File(uri), ssh, config)
+        }
+
+        //validate config
+        validate(config, ssh)
+    }
+
+    private fun uploadFile(localFile: File, ssh: SshConnection, config: ElasticConfig) {
+        val fileName = localFile.name
+        val remoteTmpPath = Paths.get("/tmp/", exe, fileName).toString()
+        val remotePath = Paths.get(config.pathHome, fileName).toString()
+        ssh.upload(localFile, remoteTmpPath)
+        ssh.execute("sudo cp $remoteTmpPath $remotePath")
+    }
+
+    private fun validate(config: ElasticConfig, ssh: SshConnection) {
+        ssh.execute("$exe test config -c ${config.configFilePath}")
+    }
+
+    private fun setup(ssh: SshConnection) {
+        ssh.execute("sudo $exe setup --dashboards", Duration.ofSeconds(70))
+    }
+
+    private fun start(ssh: SshConnection) {
+        ssh.execute("sudo service $exe start")
+    }
+
+    companion object {
+        val FILEBEAT_VU_CONFIG_FILE = UbuntuFilebeat::class.java.getResource("/elk/filebeat/vu/action-metrics/filebeat.yml").toURI()
+
+        val FILEBEAT_VU_SUPPORTING_FILES = listOf(
+            UbuntuFilebeat::class.java.getResource("/elk/filebeat/vu/action-metrics/filebeat-processor-script-parseDuration.js").toURI()
+        )
+    }
+}

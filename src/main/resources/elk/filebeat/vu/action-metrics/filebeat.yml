@@ -24,6 +24,12 @@ setup.template.settings:
 setup.kibana:
   host: "34.253.121.248:5601"
 
+# It is possible this isn't need if you run
+# $sudo metricbeat setup --dashboards
+# if is also possible the above line does not work if you don't include this...
+# docs are a bit ambiguous ...
+setup.dashboards.enabled: true
+
 # output to elasticsearch
 output:
   elasticsearch:
